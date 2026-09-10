@@ -1334,8 +1334,7 @@ body[data-layout-footer="b"] .foot-base span:last-child{ text-align:right; }
     <div class="fin-right">
       <div class="form-heading" data-rv="up">LET'S CONNECT</div>
       <p class="form-sub" data-rv="up">Have an idea, a project, or just want to talk? I'd love to hear from you.</p>
-      <form class="contact-form" id="contact-form" data-rv="up" action="/api/contact" method="POST">
-          <input type="hidden" name="_subject" value="New portfolio contact">
+      <form class="contact-form" id="contact-form" data-rv="up">
           <div class="form-row">
             <div class="form-field">
               <label for="cf-name">Name</label>
@@ -4919,7 +4918,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 else addEventListener('DOMContentLoaded', boot);
 })();
 
-/* — contact form submission via Vercel API + Resend */
+/* — contact form submission via Web3Forms */
 (function(){
   var form = document.getElementById('contact-form');
   if (!form) return;
@@ -4950,28 +4949,37 @@ else addEventListener('DOMContentLoaded', boot);
     if (!name || !email || !msg) return;
 
     sending = true;
-    btn.innerHTML = '<i></i><span>Sending...</span>';
+    btn.innerHTML = '<i></i><span>Sending\u2026</span>';
     btn.style.pointerEvents = 'none';
     btn.style.opacity = '.6';
 
-    var payload = JSON.stringify({ name: name, email: email, message: msg });
+    var payload = JSON.stringify({
+      access_key: '0c88dff1-5f8a-4cdb-9885-be7c66a76ab3',
+      name: name,
+      email: email,
+      message: msg,
+      subject: 'New Portfolio Contact \u2014 ' + name,
+      reply_to: email
+    });
 
-    fetch(form.action, {
+    fetch('https://api.web3forms.com/submit', {
       method: 'POST',
       body: payload,
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
     }).then(function(res) {
-      if (res.ok) {
-        sending = false;
-        btn.innerHTML = origHTML;
-        btn.style.pointerEvents = '';
-        btn.style.opacity = '';
+      return res.json();
+    }).then(function(data) {
+      sending = false;
+      btn.innerHTML = origHTML;
+      btn.style.pointerEvents = '';
+      btn.style.opacity = '';
+      if (data.success) {
         form.reset();
         showToast('Message sent \u2014 I\u2019ll get back to you soon.', true);
       } else {
-        return res.json().then(function(d) { throw new Error(d.error || 'Submission failed'); });
+        showToast('Something went wrong. Please try again.', false);
       }
-    }).catch(function(err) {
+    }).catch(function() {
       sending = false;
       btn.innerHTML = origHTML;
       btn.style.pointerEvents = '';
