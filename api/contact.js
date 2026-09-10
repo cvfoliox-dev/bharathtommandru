@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       errorBody = 'could not read error body';
     }
     console.error('Resend API error:', resendResponse.status, errorBody);
-    return res.status(502).json({ success: false });
+    return res.status(502).json({ success: false, resendStatus: resendResponse.status, resendError: errorBody });
 
   } catch (err) {
     console.error('Unhandled error in contact handler:', err.message, err.stack);
