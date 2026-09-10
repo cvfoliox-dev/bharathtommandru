@@ -1,8 +1,13 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
+export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -23,6 +28,10 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false });
   }
 
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safeMessage = escapeHtml(message);
+
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -31,17 +40,17 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Portfolio Contact <onboarding@resend.dev>',
+        from: 'onboarding@resend.dev',
         to: ['bharathtommandru1@gmail.com'],
         reply_to: email,
         subject: `New Portfolio Contact — ${name}`,
         html: `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
             <h2 style="color:#222;border-bottom:1px solid #eee;padding-bottom:10px;">New Portfolio Contact</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+            <p><strong>Name:</strong> ${safeName}</p>
+            <p><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
             <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
-            <p style="white-space:pre-wrap;line-height:1.6;">${message}</p>
+            <p style="white-space:pre-wrap;line-height:1.6;">${safeMessage}</p>
           </div>
         `,
         text: `New Portfolio Contact\n\nName: ${name}\nEmail: ${email}\n\n${message}`,
