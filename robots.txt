@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bharaththommandru.is-a.dev/sitemap.xml
