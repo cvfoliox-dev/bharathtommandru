@@ -128,7 +128,7 @@ h1,h2,h3{ font-weight:400; margin:0; letter-spacing:-.005em; }
 .pre-mark svg{ width:100%; height:100%; display:block; }
 .pre-jp{ font-size:12px; letter-spacing:.5em; color:var(--bone-dim); margin-bottom:20px; }
 .pre-bar{ position:relative; height:1px; background:rgba(223,231,224,.14); overflow:hidden; }
-.pre-bar i{ position:absolute; inset:0 100% 0 0; background:var(--bone); transition:right .35s linear; }
+.pre-bar i{ position:absolute; inset:0; background:var(--bone); transform:scaleX(0); transform-origin:left center; transition:transform .35s linear; }
 .pre-meta{ display:flex; justify-content:space-between; margin-top:12px;
   font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
 .pre-meta b{ font-weight:500; color:var(--bone-dim); font-variant-numeric:tabular-nums; }
@@ -4876,15 +4876,46 @@ function boot() {
   makeGrain();
   wireReveals(); wireForegroundStages(); wireNav(); wireHeroExit(); wireFocus(); wireCursor();
   document.body.classList.add('is-locked');
+  let displayedProgress = 0;
+  let targetProgress = 0;
+  let progressFrame = 0;
+  let progressDone;
+  const paintProgress = now => {
+    progressFrame = 0;
+    const delta = targetProgress - displayedProgress;
+    if (delta > 0) {
+      const elapsed = now - (paintProgress.last || now);
+      displayedProgress += Math.min(delta, Math.max(.75, Math.min(2.5, delta * Math.min(1, elapsed / 180))));
+      paintProgress.last = now;
+    }
+    preFill.style.transform = 'scaleX(' + (displayedProgress / 100) + ')';
+    prePct.textContent = String(Math.floor(displayedProgress));
+    if (displayedProgress < targetProgress) {
+      progressFrame = requestAnimationFrame(paintProgress);
+    } else if (targetProgress === 100) {
+      displayedProgress = 100;
+      preFill.style.transform = 'scaleX(1)';
+      prePct.textContent = '100';
+      if (progressDone) progressDone();
+    }
+  };
+  const setProgress = value => {
+    targetProgress = Math.max(targetProgress, Math.min(100, value));
+    if (!progressFrame) progressFrame = requestAnimationFrame(paintProgress);
+  };
+  const finishProgress = callback => {
+    progressDone = callback;
+    setProgress(100);
+  };
   let i = 0;
   const step = () => {
     const j = JOBS[i];
     const done = () => {
       i++;
       const p = i / JOBS.length;
-      preFill.style.right = ((1 - p) * 100).toFixed(1) + '%';
-      prePct.textContent = Math.round(p * 100);
-      if (i < JOBS.length) setTimeout(step, 16); else setTimeout(start, 220);
+      setProgress(p * 100);
+      if (i < JOBS.length) requestAnimationFrame(step);
+      else finishProgress(() => setTimeout(start, 220));
     };
     let r;
     try { r = j[1](); }
